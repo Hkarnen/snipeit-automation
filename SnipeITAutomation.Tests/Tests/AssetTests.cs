@@ -43,6 +43,29 @@ namespace SnipeITAutomation.Tests
             // Assert the Asset Tag input is visible
             Assert.That(await page.Locator("#asset_tag").IsVisibleAsync(), Is.True);
         }
+
+        [Test]
+        public async Task CanCreateMacBookAsset()
+        {
+            using var pw = await Playwright.CreateAsync();
+            await using var browser = await pw.Chromium.LaunchAsync(new() { Headless = false });
+            var ctx = await browser.NewContextAsync();
+            var page = await ctx.NewPageAsync();
+
+            var login = new LoginPage(page);
+            await login.GoToAsync();
+            await login.LoginAsync("admin", "password");
+
+            var assets = new AssetsPage(page);
+            await assets.GoToCreateAssetFormAsync();
+
+            var (assetTag, assetName) = await assets.FillBasicFieldsAsync();
+            await assets.SetModelAsync();
+            await assets.SetStatusAsync();
+            var checkedOutTo = await assets.CheckoutToRandomUserAsync();
+            await assets.SaveAsync();
+            
+        }
     }
 }
   
