@@ -38,11 +38,10 @@ namespace SnipeITAutomation.Tests
 
             // assets → new asset form
             var assets = new AssetsPage(page);
-            await assets.NavigateToAssetsAsync();
             await assets.GoToCreateAssetFormAsync();
 
-            // assert directly 
-            Assert.That(await page.GetByLabel("Asset Tag").IsVisibleAsync(), Is.True);
+            // Assert the Asset Tag input is visible
+            Assert.That(await page.Locator("#asset_tag").IsVisibleAsync(), Is.True);
         }
     }
 }

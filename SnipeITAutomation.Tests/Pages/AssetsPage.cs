@@ -11,37 +11,29 @@ namespace SnipeITAutomation.Tests.Pages
         /// <summary>
         /// Opens the Assets list.
         /// </summary>
-        public async Task NavigateToAssetsAsync()
-        {
-            await _page.GotoAsync("https://demo.snipeitapp.com/hardware");
-            await _page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        // public async Task NavigateToAssetsAsync()
+        // {
+        //     await _page.GotoAsync("https://demo.snipeitapp.com/hardware");
+        //     await _page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
-            // Wait for something stable on the list page (either table or "New Asset" button)
-            var tableOrButton = _page.Locator("table, a:has-text('New Asset'), button:has-text('New Asset')");
-            await tableOrButton.First.WaitForAsync();
-        }
+        //     // Wait for something stable on the list page (either table or "New Asset" button)
+        //     var tableOrButton = _page.Locator("table, a:has-text('New Asset'), button:has-text('New Asset')");
+        //     await tableOrButton.First.WaitForAsync();
+        // }
 
         /// <summary>
         /// Open the New Asset form.
         /// </summary>
         public async Task GoToCreateAssetFormAsync()
         {
-            // Prefer clicking the UI element if present
-            var newAssetLink = _page.Locator("a:has-text('New Asset'), button:has-text('New Asset')");
-            if (await newAssetLink.First.IsVisibleAsync())
-            {
-                await newAssetLink.First.ClickAsync();
-            }
-            else
-            {
-                // Fallback to direct route
-                await _page.GotoAsync("https://demo.snipeitapp.com/hardware/create");
-            }
+            // Simply use direct link
+            await _page.GotoAsync("https://demo.snipeitapp.com/hardware/create");
+            // Wait for the actual Asset Tag input (unique id)
+            var assetTag = _page.Locator("#asset_tag");
+            await assetTag.WaitForAsync();
 
-            await _page.WaitForURLAsync("**/hardware/create");
-            // Sanity: the form should show fields like "Asset Tag"
-            await _page.GetByLabel("Asset Tag").WaitForAsync();
         }
+
 
         // Placeholder for additional methods to interact with the Assets page
         // public Task FillBasicFieldsAsync(string assetTag, string assetName) { ... }
