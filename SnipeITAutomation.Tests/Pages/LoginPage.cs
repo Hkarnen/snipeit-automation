@@ -26,9 +26,12 @@ namespace SnipeITAutomation.Tests.Pages
 
             // Click the login button
             await _page.ClickAsync("button[type='submit']");
+            var loggedInMarker = _page.Locator(
+                "a[href*='/hardware'], a:has-text('Assets'), a:has-text('Dashboard')"
+            ).First;
 
             // Wait for dashboard to load
-            await _page.WaitForURLAsync("**/dashboard");
+            await loggedInMarker.WaitForAsync();
         }
     }
 }
