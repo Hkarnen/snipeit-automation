@@ -10,6 +10,12 @@ namespace SnipeITAutomation.Tests.Pages
         public AssetsPage(IPage page) => _page = page;
 
         /// <summary>
+        /// Navigate to the Assets page
+        /// </summary>
+        public async Task GoToAsync() =>
+            await _page.GotoAsync("https://demo.snipeitapp.com/hardware");
+
+        /// <summary>
         /// Go straight to the new asset form
         /// </summary>
         public async Task GoToCreateAssetFormAsync()
@@ -19,26 +25,21 @@ namespace SnipeITAutomation.Tests.Pages
             await _page.Locator("#asset_tag").WaitForAsync();
         }
 
+        public async Task SearchForAssetAsync(string assetTag)
+        {
+            var searchBox = _page.Locator("input.search-input");
+            await searchBox.FillAsync(assetTag);
+            await searchBox.PressAsync("Enter");
+        }
+
         /// <summary>
         /// Fills Asset Tag and Asset Name with unique values
         /// </summary>
-        public async Task<(string AssetTag, string AssetName)> FillBasicFieldsAsync(
-            string assetTagPrefix = "MBP13",
-            string assetNamePrefix = "MacBook Pro 13")
+        public async Task<string> GetPrefilledAssetTagAsync()
         {
-            var suffix = DateTime.UtcNow.ToString("yyyyMMddHHmmssfff");
-            var assetTag = $"{assetTagPrefix}-{suffix}";
-            var assetName = $"{assetNamePrefix} {suffix}";
-
-            // Asset Tag
-            var assetTagInput = _page.Locator("#asset_tag");
-            await assetTagInput.FillAsync(assetTag);
-
-            // Asset Name
-            var nameInput = _page.GetByLabel("Asset Name");
-            await nameInput.FillAsync(assetName);
-
-            return (assetTag, assetName);
+            // The create form prepopulates #asset_tag
+            var tag = (await _page.Locator("#asset_tag").InputValueAsync()).Trim();
+            return tag;
         }
 
         /// <summary>
@@ -46,8 +47,12 @@ namespace SnipeITAutomation.Tests.Pages
         /// </summary>
         public async Task SetModelAsync()
         {
-            await _page.ClickAsync("#select2-model_id-container");
-            await _page.FillAsync(".select2-search__field", "MacBook Pro 13");
+            var target = "MacBook Pro 13\"";
+            // Open the Select2 dropdown
+            await _page.ClickAsync("#select2-model_select_id-container");
+            // Type into the search box
+            await _page.FillAsync(".select2-search__field", target);
+            // Click the matching option
             await _page.ClickAsync(".select2-results__option:has-text(\"MacBook Pro 13\")");
         }
 
@@ -56,9 +61,15 @@ namespace SnipeITAutomation.Tests.Pages
         /// </summary>
         public async Task SetStatusAsync()
         {
-            await _page.ClickAsync("#select2-status_id-container");
-            await _page.FillAsync(".select2-search__field", "Ready to Deploy");
+            var target = "Ready to Deploy";
+            // Open the Select2 dropdown
+            await _page.ClickAsync("#select2-status_select_id-container");
+            // Type into the search box
+            await _page.FillAsync(".select2-search__field", target);
+            // Click the matching option
             await _page.ClickAsync(".select2-results__option:has-text(\"Ready to Deploy\")");
+            // Wait for the checkout section to appear after status is set
+            await _page.Locator("#assignto_selector").WaitForAsync();
         }
 
         /// <summary>
@@ -66,14 +77,17 @@ namespace SnipeITAutomation.Tests.Pages
         /// </summary>
         public async Task<string> CheckoutToRandomUserAsync()
         {
-            await _page.ClickAsync("#select2-assigned_to-container");
+            await _page.ClickAsync("#assignto_selector .btn:has-text(\"User\")");
+            await _page.ClickAsync("#select2-assigned_user_select-container");
 
-            var options = _page.Locator(".select2-results__option");
+            var options = _page.Locator(".select2-results__option[role='option']:not([aria-disabled='true'])");
             await options.First.WaitForAsync();
 
-            // Pick first real option after the placeholder
-            var text = (await options.Nth(1).InnerTextAsync()).Trim();
-            await options.Nth(1).ClickAsync();
+            var count = await options.CountAsync();
+            var idx = new Random().Next(0, count);        // 0..count-1
+            var chosen = options.Nth(idx);
+            var text = (await chosen.InnerTextAsync()).Trim();
+            await chosen.ClickAsync();
             return text;
         }
 

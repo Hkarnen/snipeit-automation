@@ -59,12 +59,92 @@ namespace SnipeITAutomation.Tests
             var assets = new AssetsPage(page);
             await assets.GoToCreateAssetFormAsync();
 
-            var (assetTag, assetName) = await assets.FillBasicFieldsAsync();
+            var assetTag = await assets.GetPrefilledAssetTagAsync();
+            Assert.That(await page.Locator("#asset_tag").InputValueAsync(), Is.EqualTo(assetTag));
+            // Set Model = MacBook Pro 13"
             await assets.SetModelAsync();
+            var modelText = (await page.Locator("#select2-model_select_id-container").InnerTextAsync()).Trim();
+            Assert.That(modelText, Does.Contain("Macbook Pro 13").IgnoreCase);
+            // Set Status = Ready to Deploy
             await assets.SetStatusAsync();
+            var statusText = (await page.Locator("#select2-status_select_id-container").InnerTextAsync()).Trim();
+            Assert.That(statusText, Does.Contain("Ready to Deploy").IgnoreCase);
+            // Checkout to random user
             var checkedOutTo = await assets.CheckoutToRandomUserAsync();
+            var checkoutText = (await page.Locator("#select2-assigned_user_select-container").InnerTextAsync()).Trim();
+            Assert.That(checkoutText, Does.Contain(checkedOutTo).IgnoreCase);
+
             await assets.SaveAsync();
-            
+
+        }
+
+        [Test]
+        public async Task AllSteps()
+        {
+            using var pw = await Playwright.CreateAsync();
+            await using var browser = await pw.Chromium.LaunchAsync(new() { Headless = false });
+            var ctx = await browser.NewContextAsync();
+            var page = await ctx.NewPageAsync();
+
+            var login = new LoginPage(page);
+            await login.GoToAsync();
+            await login.LoginAsync("admin", "password");
+
+            var assets = new AssetsPage(page);
+            await assets.GoToCreateAssetFormAsync();
+
+            var assetTag = await assets.GetPrefilledAssetTagAsync();
+            Assert.That(await page.Locator("#asset_tag").InputValueAsync(), Is.EqualTo(assetTag));
+            // Set Model = MacBook Pro 13"
+            await assets.SetModelAsync();
+            var modelText = (await page.Locator("#select2-model_select_id-container").InnerTextAsync()).Trim();
+            Assert.That(modelText, Does.Contain("Macbook Pro 13").IgnoreCase);
+            // Set Status = Ready to Deploy
+            await assets.SetStatusAsync();
+            var statusText = (await page.Locator("#select2-status_select_id-container").InnerTextAsync()).Trim();
+            Assert.That(statusText, Does.Contain("Ready to Deploy").IgnoreCase);
+            // Checkout to random user
+            var checkedOutTo = await assets.CheckoutToRandomUserAsync();
+            var checkoutText = (await page.Locator("#select2-assigned_user_select-container").InnerTextAsync()).Trim();
+            Assert.That(checkoutText, Does.Contain(checkedOutTo).IgnoreCase);
+
+            await assets.SaveAsync();
+            // Go to asset list
+            await assets.GoToAsync();
+            // Search for the asset by Asset Tag
+            await assets.SearchForAssetAsync(assetTag);
+            // Assert the asset appears in the search results
+            var row = page.Locator("table tbody tr").Filter(new() { HasTextString = assetTag }).First;
+            await row.WaitForAsync();
+            Assert.That(await row.IsVisibleAsync(), Is.True);
+
+
+            // Open asset details
+            await row.Locator("a[href*='/hardware/']").First.ClickAsync();
+            await page.WaitForURLAsync("**/hardware/*");
+
+            await page.Locator("#details").WaitForAsync();   // ensure details tab content is visible
+            var details = page.Locator("#details");
+
+            var detailsText = await details.InnerTextAsync();
+            // asset tag
+            Assert.That(detailsText, Does.Contain(assetTag));
+
+            // status
+            Assert.That(detailsText, Does.Contain("Ready to Deploy"));
+
+            // model
+            Assert.That(detailsText, Does.Contain("Macbook Pro 13"));
+
+            // checked-out user
+            var parts = checkedOutTo.Split('#');
+            var userNameOnly = parts[0].Split('(')[0].Trim();
+            var userIdOnly = parts.Length > 1 ? parts[1].TrimEnd(')') : string.Empty;
+
+            Assert.That(detailsText, Does.Contain(userNameOnly).IgnoreCase);
+            Assert.That(detailsText, Does.Contain(userIdOnly));
+
+            // validate details in history tab
         }
     }
 }
