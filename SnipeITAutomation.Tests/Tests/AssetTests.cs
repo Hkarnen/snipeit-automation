@@ -145,6 +145,21 @@ namespace SnipeITAutomation.Tests
             Assert.That(detailsText, Does.Contain(userIdOnly));
 
             // validate details in history tab
+            await page.ClickAsync("a[href='#history']");
+            // wait for the history table to render
+            var historyTable = page.Locator("#assetHistory");
+            await historyTable.WaitForAsync();
+
+           // pick the "checkout" row
+            var checkoutRow = historyTable.Locator("tbody tr").Filter(new() { HasTextString = "checkout" }).First;
+            await checkoutRow.WaitForAsync();
+
+            // target user
+            var userLinks = checkoutRow.Locator("a[href*='/users/']");
+            await userLinks.First.WaitForAsync();
+            var targetText = (await userLinks.Last.InnerTextAsync()).Trim();
+            Assert.That(targetText, Does.Contain(userNameOnly).IgnoreCase);
+
         }
     }
 }
